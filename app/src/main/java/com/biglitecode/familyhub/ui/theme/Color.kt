@@ -2,9 +2,23 @@ package com.biglitecode.familyhub.ui.theme
 
 import androidx.compose.ui.graphics.Color
 
-val FamilyBlue = Color(0xFF3B5BDB)
-val FamilyBlueDark = Color(0xFF1E3A8A)
-val FamilyAccent = Color(0xFFFFA94D)
-val BackgroundLight = Color(0xFFF8F9FC)
-val TextDark = Color(0xFF1A1D29)
-val TextGray = Color(0xFF6B7280)
+// ── FamilyHub warm "family chore tracker" palette ───────────────────────
+// Surfaces
+val CreamBackground = Color(0xFFFBF3E0)
+val CardCream = Color(0xFFFFFDF8)
+
+// Primary / completed / active
+val ForestGreen = Color(0xFF2F6B44)
+val ForestGreenLight = Color(0xFFDCEEE0)
+val BorderGreen = Color(0xFF2F6B44)
+
+// Secondary / pending / reward
+val GoldYellow = Color(0xFFF5C242)
+val GoldYellowLight = Color(0xFFFDF0CE)
+
+// Semantic
+val CoralRed = Color(0xFFE05C5C)
+
+// Text
+val TextBrown = Color(0xFF3A2E22)
+val TextMutedBrown = Color(0xFF8A7A64)

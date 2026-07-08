@@ -1,7 +1,8 @@
 package com.biglitecode.familyhub.ui.login
 
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
+import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
@@ -18,9 +19,7 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
-import androidx.compose.foundation.BorderStroke
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
@@ -30,13 +29,16 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.biglitecode.familyhub.ui.components.FamilyLogoBadge
-import com.biglitecode.familyhub.ui.theme.BackgroundLight
-import com.biglitecode.familyhub.ui.theme.FamilyAccent
-import com.biglitecode.familyhub.ui.theme.FamilyBlue
-import com.biglitecode.familyhub.ui.theme.FamilyBlueDark
+import com.biglitecode.familyhub.ui.theme.BorderGreen
+import com.biglitecode.familyhub.ui.theme.CardCream
+import com.biglitecode.familyhub.ui.theme.CreamBackground
 import com.biglitecode.familyhub.ui.theme.FamilyHubTheme
-import com.biglitecode.familyhub.ui.theme.TextDark
-import com.biglitecode.familyhub.ui.theme.TextGray
+import com.biglitecode.familyhub.ui.theme.ForestGreen
+import com.biglitecode.familyhub.ui.theme.ForestGreenLight
+import com.biglitecode.familyhub.ui.theme.GoldYellow
+import com.biglitecode.familyhub.ui.theme.GoldYellowLight
+import com.biglitecode.familyhub.ui.theme.TextBrown
+import com.biglitecode.familyhub.ui.theme.TextMutedBrown
 
 @Composable
 fun LoginScreen(
@@ -50,36 +52,35 @@ fun LoginScreen(
     var password by remember { mutableStateOf("") }
     var passwordVisible by remember { mutableStateOf(false) }
 
-    val fieldShape = RoundedCornerShape(16.dp)
+    val cs = MaterialTheme.colorScheme
+
+    // Field shape follows the theme's small shape scale.
+    val fieldShape = MaterialTheme.shapes.small
     val fieldColors = OutlinedTextFieldDefaults.colors(
-        focusedBorderColor = FamilyBlue,
-        unfocusedBorderColor = Color(0xFFE2E5EF),
+        focusedBorderColor = ForestGreen,
+        unfocusedBorderColor = TextMutedBrown.copy(alpha = 0.45f),
         focusedContainerColor = Color.White,
-        unfocusedContainerColor = Color(0xFFF4F6FB),
-        cursorColor = FamilyBlue,
-        focusedLeadingIconColor = FamilyBlue,
-        unfocusedLeadingIconColor = TextGray,
-        focusedLabelColor = FamilyBlue,
-        unfocusedLabelColor = TextGray
+        unfocusedContainerColor = GoldYellowLight.copy(alpha = 0.35f),
+        cursorColor = ForestGreen,
+        focusedLeadingIconColor = ForestGreen,
+        unfocusedLeadingIconColor = TextMutedBrown,
+        focusedLabelColor = ForestGreen,
+        unfocusedLabelColor = TextMutedBrown
     )
 
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .background(BackgroundLight)
+            .background(cs.background)
             .verticalScroll(rememberScrollState())
     ) {
-        // ── Brand header ──────────────────────────────────────────────
+        // ── Brand header (rounded pill on cream) ───────────────────────
         Box(
             modifier = Modifier
                 .fillMaxWidth()
                 .height(260.dp)
                 .clip(RoundedCornerShape(bottomStart = 36.dp, bottomEnd = 36.dp))
-                .background(
-                    Brush.verticalGradient(
-                        colors = listOf(FamilyBlueDark, FamilyBlue, Color(0xFF5B7CFF))
-                    )
-                )
+                .background(ForestGreen)
         ) {
             // Soft decorative circles
             Box(
@@ -93,7 +94,7 @@ fun LoginScreen(
                     .size(120.dp)
                     .align(Alignment.TopEnd)
                     .offset(x = 30.dp, y = 40.dp)
-                    .background(FamilyAccent.copy(alpha = 0.18f), CircleShape)
+                    .background(GoldYellow.copy(alpha = 0.35f), CircleShape)
             )
             Box(
                 modifier = Modifier
@@ -111,12 +112,26 @@ fun LoginScreen(
                 verticalArrangement = Arrangement.Center,
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
-                FamilyLogoBadge(
-                    badgeSize = 84.dp,
-                    logoSize = 60.dp,
-                    cornerRadius = 22.dp,
-                    surfaceColor = Color.White.copy(alpha = 0.18f)
-                )
+                // Logo badge inside a gold ring — circular avatar chip style.
+                Box(
+                    modifier = Modifier
+                        .size(92.dp)
+                        .clip(CircleShape)
+                        .background(Color.White.copy(alpha = 0.16f))
+                        .border(
+                            width = 2.dp,
+                            color = GoldYellow,
+                            shape = CircleShape
+                        ),
+                    contentAlignment = Alignment.Center
+                ) {
+                    FamilyLogoBadge(
+                        badgeSize = 84.dp,
+                        logoSize = 60.dp,
+                        cornerRadius = 22.dp,
+                        surfaceColor = Color.Transparent
+                    )
+                }
                 Spacer(modifier = Modifier.height(16.dp))
                 Text(
                     text = "FamilyHub",
@@ -134,15 +149,16 @@ fun LoginScreen(
             }
         }
 
-        // ── Form card ─────────────────────────────────────────────────
+        // ── Form card (cream card with green border) ────────────────────
         Card(
             modifier = Modifier
                 .fillMaxWidth()
                 .padding(horizontal = 20.dp)
                 .offset(y = (-28).dp),
-            shape = RoundedCornerShape(28.dp),
-            colors = CardDefaults.cardColors(containerColor = Color.White),
-            elevation = CardDefaults.cardElevation(defaultElevation = 8.dp)
+            shape = MaterialTheme.shapes.large,
+            colors = CardDefaults.cardColors(containerColor = CardCream),
+            border = BorderStroke(1.5.dp, BorderGreen),
+            elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
         ) {
             Column(
                 modifier = Modifier
@@ -153,12 +169,12 @@ fun LoginScreen(
                     text = "Welcome back",
                     fontSize = 24.sp,
                     fontWeight = FontWeight.Bold,
-                    color = TextDark
+                    color = TextBrown
                 )
                 Text(
                     text = "Sign in to manage your family tasks",
                     fontSize = 14.sp,
-                    color = TextGray,
+                    color = TextMutedBrown,
                     modifier = Modifier.padding(top = 4.dp, bottom = 24.dp)
                 )
 
@@ -166,7 +182,7 @@ fun LoginScreen(
                     value = email,
                     onValueChange = { email = it },
                     label = { Text("Email") },
-                    placeholder = { Text("you@example.com", color = TextGray.copy(alpha = 0.6f)) },
+                    placeholder = { Text("you@example.com", color = TextMutedBrown.copy(alpha = 0.6f)) },
                     leadingIcon = {
                         Icon(Icons.Filled.Email, contentDescription = null)
                     },
@@ -183,7 +199,7 @@ fun LoginScreen(
                     value = password,
                     onValueChange = { password = it },
                     label = { Text("Password") },
-                    placeholder = { Text("••••••••", color = TextGray.copy(alpha = 0.6f)) },
+                    placeholder = { Text("••••••••", color = TextMutedBrown.copy(alpha = 0.6f)) },
                     leadingIcon = {
                         Icon(Icons.Filled.Lock, contentDescription = null)
                     },
@@ -200,7 +216,7 @@ fun LoginScreen(
                                 } else {
                                     "Show password"
                                 },
-                                tint = TextGray
+                                tint = TextMutedBrown
                             )
                         }
                     },
@@ -222,7 +238,7 @@ fun LoginScreen(
                 ) {
                     Text(
                         text = "Forgot password?",
-                        color = FamilyBlue,
+                        color = ForestGreen,
                         fontWeight = FontWeight.Medium,
                         fontSize = 13.sp
                     )
@@ -230,16 +246,18 @@ fun LoginScreen(
 
                 if (errorMessage != null) {
                     Surface(
-                        color = MaterialTheme.colorScheme.errorContainer.copy(alpha = 0.55f),
-                        shape = RoundedCornerShape(12.dp),
+                        color = cs.errorContainer,
+                        shape = MaterialTheme.shapes.small,
+                        border = BorderStroke(1.5.dp, cs.error),
                         modifier = Modifier
                             .fillMaxWidth()
                             .padding(bottom = 12.dp)
                     ) {
                         Text(
                             text = errorMessage,
-                            color = MaterialTheme.colorScheme.error,
+                            color = cs.error,
                             fontSize = 13.sp,
+                            fontWeight = FontWeight.Medium,
                             modifier = Modifier.padding(horizontal = 14.dp, vertical = 10.dp)
                         )
                     }
@@ -247,56 +265,34 @@ fun LoginScreen(
                     Spacer(modifier = Modifier.height(8.dp))
                 }
 
-                // Gradient login button
+                // Login button — forest green, large rounded pill.
                 Button(
                     onClick = { onLoginClick(email, password) },
                     enabled = !isLoading && email.isNotBlank() && password.isNotBlank(),
                     colors = ButtonDefaults.buttonColors(
-                        containerColor = Color.Transparent,
-                        disabledContainerColor = Color.Transparent,
+                        containerColor = ForestGreen,
+                        disabledContainerColor = ForestGreen.copy(alpha = 0.4f),
                         contentColor = Color.White,
                         disabledContentColor = Color.White.copy(alpha = 0.7f)
                     ),
-                    contentPadding = PaddingValues(),
-                    shape = RoundedCornerShape(16.dp),
+                    shape = MaterialTheme.shapes.large,
                     modifier = Modifier
                         .fillMaxWidth()
                         .height(54.dp)
                 ) {
-                    Box(
-                        modifier = Modifier
-                            .fillMaxSize()
-                            .background(
-                                brush = if (!isLoading && email.isNotBlank() && password.isNotBlank()) {
-                                    Brush.horizontalGradient(
-                                        listOf(FamilyBlueDark, FamilyBlue, Color(0xFF5B7CFF))
-                                    )
-                                } else {
-                                    Brush.horizontalGradient(
-                                        listOf(
-                                            FamilyBlue.copy(alpha = 0.45f),
-                                            FamilyBlue.copy(alpha = 0.45f)
-                                        )
-                                    )
-                                },
-                                shape = RoundedCornerShape(16.dp)
-                            ),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        if (isLoading) {
-                            CircularProgressIndicator(
-                                modifier = Modifier.size(22.dp),
-                                color = Color.White,
-                                strokeWidth = 2.5.dp
-                            )
-                        } else {
-                            Text(
-                                text = "Login",
-                                fontSize = 16.sp,
-                                fontWeight = FontWeight.SemiBold,
-                                letterSpacing = 0.3.sp
-                            )
-                        }
+                    if (isLoading) {
+                        CircularProgressIndicator(
+                            modifier = Modifier.size(22.dp),
+                            color = Color.White,
+                            strokeWidth = 2.5.dp
+                        )
+                    } else {
+                        Text(
+                            text = "Login",
+                            fontSize = 16.sp,
+                            fontWeight = FontWeight.SemiBold,
+                            letterSpacing = 0.3.sp
+                        )
                     }
                 }
 
@@ -309,27 +305,29 @@ fun LoginScreen(
                 ) {
                     HorizontalDivider(
                         modifier = Modifier.weight(1f),
-                        color = Color(0xFFE2E5EF)
+                        color = TextMutedBrown.copy(alpha = 0.3f)
                     )
                     Text(
                         text = "  New here?  ",
-                        color = TextGray,
+                        color = TextMutedBrown,
                         fontSize = 12.sp
                     )
                     HorizontalDivider(
                         modifier = Modifier.weight(1f),
-                        color = Color(0xFFE2E5EF)
+                        color = TextMutedBrown.copy(alpha = 0.3f)
                     )
                 }
 
                 Spacer(modifier = Modifier.height(18.dp))
 
+                // Secondary action — gold outlined pill.
                 OutlinedButton(
                     onClick = onSignUpClick,
-                    shape = RoundedCornerShape(16.dp),
-                    border = BorderStroke(1.5.dp, FamilyBlue.copy(alpha = 0.45f)),
+                    shape = MaterialTheme.shapes.large,
+                    border = BorderStroke(1.5.dp, GoldYellow),
                     colors = ButtonDefaults.outlinedButtonColors(
-                        contentColor = FamilyBlue
+                        containerColor = GoldYellowLight,
+                        contentColor = TextBrown
                     ),
                     modifier = Modifier
                         .fillMaxWidth()
@@ -347,7 +345,7 @@ fun LoginScreen(
         // Footer
         Text(
             text = "Family tasks · Shared calendars · Together",
-            color = TextGray.copy(alpha = 0.75f),
+            color = TextMutedBrown,
             fontSize = 12.sp,
             textAlign = TextAlign.Center,
             modifier = Modifier
