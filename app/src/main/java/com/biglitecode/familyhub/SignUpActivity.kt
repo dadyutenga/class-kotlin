@@ -9,6 +9,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import com.biglitecode.familyhub.data.session.SessionManager
 import com.biglitecode.familyhub.ui.signup.SignUpScreen
 import com.biglitecode.familyhub.ui.theme.FamilyHubTheme
 
@@ -35,6 +36,7 @@ class SignUpActivity : ComponentActivity() {
                         //   - store profile: name, role, family group create/join (familyGroupCode)
                         //   - on failure: isLoading = false; errorMessage = ...
                         // Placeholder success so navigation can be exercised:
+                        SessionManager.setFromSignup(_name, _email, _role)
                         startActivity(Intent(this, DashboardActivity::class.java))
                         finish()
                     },

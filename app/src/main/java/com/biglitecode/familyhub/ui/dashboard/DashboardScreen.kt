@@ -3,7 +3,6 @@ package com.biglitecode.familyhub.ui.dashboard
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
@@ -33,7 +32,9 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
+import com.biglitecode.familyhub.data.model.FamilyRole
 import com.biglitecode.familyhub.data.model.TaskStatus
+import com.biglitecode.familyhub.data.session.SessionManager
 import com.biglitecode.familyhub.ui.components.MemberAvatar
 import com.biglitecode.familyhub.ui.components.TaskCard
 import com.biglitecode.familyhub.ui.tasks.TasksViewModel
@@ -49,16 +50,32 @@ import com.biglitecode.familyhub.ui.theme.TextMutedBrown
 @Composable
 fun DashboardScreen(
     viewModel: TasksViewModel = viewModel(),
-    userName: String = "Alex",
     familyName: String = "My Family",
     onTaskClick: (String) -> Unit = {}
 ) {
     val tasks by viewModel.tasks.collectAsStateWithLifecycle()
     val members by viewModel.members.collectAsStateWithLifecycle()
-    val pendingCount by viewModel.pendingCount.collectAsStateWithLifecycle()
     val familyPoints by viewModel.familyPoints.collectAsStateWithLifecycle()
+    val currentUser by SessionManager.currentUser.collectAsStateWithLifecycle()
 
-    val todaysTasks = tasks.filter { it.status != TaskStatus.DONE }.take(6)
+    val isParent = currentUser?.role == FamilyRole.PARENT
+    val userName = currentUser?.name ?: "there"
+
+    val visibleTasks = if (currentUser?.role == FamilyRole.PARENT) {
+        tasks.filter { it.status != TaskStatus.DONE }
+    } else {
+        tasks.filter {
+            it.status != TaskStatus.DONE && it.assignedTo == currentUser?.id
+        }
+    }.take(6)
+
+    val pendingCount = visibleTasks.size
+    val sectionTitle = if (currentUser?.role == FamilyRole.PARENT) {
+        "Today's Tasks"
+    } else {
+        "My Tasks"
+    }
+
     // Soft weekly goal for the progress bar (purely visual for now).
     val weeklyGoal = 100
     val progress = (familyPoints.toFloat() / weeklyGoal).coerceIn(0f, 1f)
@@ -95,6 +112,14 @@ fun DashboardScreen(
                     fontSize = 15.sp,
                     color = TextMutedBrown
                 )
+                if (!isParent) {
+                    Text(
+                        text = "Showing your assigned chores only",
+                        fontSize = 12.sp,
+                        color = TextMutedBrown,
+                        modifier = Modifier.padding(top = 2.dp)
+                    )
+                }
             }
         }
 
@@ -137,7 +162,7 @@ fun DashboardScreen(
                     .padding(horizontal = 20.dp, vertical = 12.dp)
             ) {
                 Text(
-                    text = "Today's Tasks",
+                    text = sectionTitle,
                     fontWeight = FontWeight.Bold,
                     fontSize = 18.sp,
                     color = TextBrown,
@@ -158,16 +183,23 @@ fun DashboardScreen(
             }
         }
 
-        items(todaysTasks, key = { it.id }) { task ->
+        items(visibleTasks, key = { it.id }) { task ->
             TaskCard(
                 task = task,
                 onClick = { onTaskClick(task.id) },
-                onToggleComplete = { viewModel.toggleComplete(task) },
+                onToggleComplete = {
+                    // Child may only toggle their own tasks; parent can toggle any.
+                    if (currentUser?.role == FamilyRole.PARENT ||
+                        task.assignedTo == currentUser?.id
+                    ) {
+                        viewModel.toggleComplete(task)
+                    }
+                },
                 modifier = Modifier.padding(horizontal = 20.dp, vertical = 6.dp)
             )
         }
 
-        if (todaysTasks.isEmpty()) {
+        if (visibleTasks.isEmpty()) {
             item {
                 Text(
                     text = "All caught up — great job!",

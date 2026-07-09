@@ -7,11 +7,11 @@ import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
@@ -28,7 +28,6 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
@@ -36,7 +35,9 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
+import com.biglitecode.familyhub.data.model.FamilyRole
 import com.biglitecode.familyhub.data.model.TaskStatus
+import com.biglitecode.familyhub.data.session.SessionManager
 import com.biglitecode.familyhub.ui.components.TaskCard
 import com.biglitecode.familyhub.ui.theme.CardCream
 import com.biglitecode.familyhub.ui.theme.FamilyHubTheme
@@ -54,26 +55,40 @@ fun TasksScreen(
 ) {
     val tasks by viewModel.tasks.collectAsStateWithLifecycle()
     val members by viewModel.members.collectAsStateWithLifecycle()
+    val currentUser by SessionManager.currentUser.collectAsStateWithLifecycle()
     var filter by remember { mutableStateOf(TaskFilter.ALL) }
     var showAddDialog by remember { mutableStateOf(false) }
+    // Parent-only assignee chip filter ("All" or a specific member id).
+    var assigneeFilterId by remember { mutableStateOf<String?>(null) }
+
+    val isParent = currentUser?.role == FamilyRole.PARENT
+
+    val roleScoped = if (currentUser?.role == FamilyRole.PARENT) {
+        if (assigneeFilterId == null) tasks
+        else tasks.filter { it.assignedTo == assigneeFilterId }
+    } else {
+        tasks.filter { it.assignedTo == currentUser?.id }
+    }
 
     val filtered = when (filter) {
-        TaskFilter.ALL -> tasks
-        TaskFilter.PENDING -> tasks.filter {
+        TaskFilter.ALL -> roleScoped
+        TaskFilter.PENDING -> roleScoped.filter {
             it.status == TaskStatus.PENDING || it.status == TaskStatus.OVERDUE
         }
-        TaskFilter.DONE -> tasks.filter { it.status == TaskStatus.DONE }
+        TaskFilter.DONE -> roleScoped.filter { it.status == TaskStatus.DONE }
     }
 
     Scaffold(
         containerColor = MaterialTheme.colorScheme.background,
         floatingActionButton = {
-            FloatingActionButton(
-                onClick = { showAddDialog = true },
-                containerColor = ForestGreen,
-                contentColor = CardCream
-            ) {
-                Icon(Icons.Filled.Add, contentDescription = "Add task")
+            if (currentUser?.role == FamilyRole.PARENT) {
+                FloatingActionButton(
+                    onClick = { showAddDialog = true },
+                    containerColor = ForestGreen,
+                    contentColor = CardCream
+                ) {
+                    Icon(Icons.Filled.Add, contentDescription = "Add task")
+                }
             }
         }
     ) { padding ->
@@ -85,7 +100,7 @@ fun TasksScreen(
                 .statusBarsPadding()
         ) {
             Text(
-                text = "Tasks",
+                text = if (isParent) "Tasks" else "My Tasks",
                 fontWeight = FontWeight.Bold,
                 fontSize = 26.sp,
                 color = TextBrown,
@@ -120,6 +135,41 @@ fun TasksScreen(
                 }
             }
 
+            if (currentUser?.role == FamilyRole.PARENT) {
+                Spacer(modifier = Modifier.height(8.dp))
+                LazyRow(
+                    contentPadding = PaddingValues(horizontal = 20.dp),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    item {
+                        FilterChip(
+                            selected = assigneeFilterId == null,
+                            onClick = { assigneeFilterId = null },
+                            label = { Text("Everyone") },
+                            colors = FilterChipDefaults.filterChipColors(
+                                selectedContainerColor = ForestGreen,
+                                selectedLabelColor = CardCream,
+                                containerColor = CardCream,
+                                labelColor = TextBrown
+                            )
+                        )
+                    }
+                    items(members, key = { it.id }) { member ->
+                        FilterChip(
+                            selected = assigneeFilterId == member.id,
+                            onClick = { assigneeFilterId = member.id },
+                            label = { Text(member.name) },
+                            colors = FilterChipDefaults.filterChipColors(
+                                selectedContainerColor = ForestGreen,
+                                selectedLabelColor = CardCream,
+                                containerColor = CardCream,
+                                labelColor = TextBrown
+                            )
+                        )
+                    }
+                }
+            }
+
             Spacer(modifier = Modifier.height(8.dp))
 
             LazyColumn(
@@ -131,7 +181,13 @@ fun TasksScreen(
                     TaskCard(
                         task = task,
                         onClick = { onTaskClick(task.id) },
-                        onToggleComplete = { viewModel.toggleComplete(task) }
+                        onToggleComplete = {
+                            if (currentUser?.role == FamilyRole.PARENT ||
+                                task.assignedTo == currentUser?.id
+                            ) {
+                                viewModel.toggleComplete(task)
+                            }
+                        }
                     )
                 }
                 if (filtered.isEmpty()) {
@@ -148,7 +204,7 @@ fun TasksScreen(
         }
     }
 
-    if (showAddDialog) {
+    if (showAddDialog && currentUser?.role == FamilyRole.PARENT) {
         AddTaskDialog(
             members = members,
             onDismiss = { showAddDialog = false },

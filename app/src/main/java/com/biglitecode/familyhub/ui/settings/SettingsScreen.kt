@@ -18,6 +18,7 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.Logout
 import androidx.compose.material.icons.filled.DarkMode
+import androidx.compose.material.icons.filled.Group
 import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.Language
 import androidx.compose.material.icons.filled.Menu
@@ -29,13 +30,19 @@ import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Switch
 import androidx.compose.material3.SwitchDefaults
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
@@ -43,11 +50,14 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
+import com.biglitecode.familyhub.data.model.FamilyRole
+import com.biglitecode.familyhub.data.session.SessionManager
 import com.biglitecode.familyhub.ui.theme.BorderGreen
 import com.biglitecode.familyhub.ui.theme.CardCream
 import com.biglitecode.familyhub.ui.theme.CoralRed
 import com.biglitecode.familyhub.ui.theme.FamilyHubTheme
 import com.biglitecode.familyhub.ui.theme.ForestGreen
+import com.biglitecode.familyhub.ui.theme.GoldYellowLight
 import com.biglitecode.familyhub.ui.theme.TextBrown
 import com.biglitecode.familyhub.ui.theme.TextMutedBrown
 
@@ -55,9 +65,13 @@ import com.biglitecode.familyhub.ui.theme.TextMutedBrown
 fun SettingsScreen(
     viewModel: SettingsViewModel = viewModel(),
     onOpenDrawer: () -> Unit = {},
-    onLogout: () -> Unit = {}
+    onLogout: () -> Unit = {},
+    onManageFamily: () -> Unit = {}
 ) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
+    val currentUser by SessionManager.currentUser.collectAsStateWithLifecycle()
+    // Placeholder local edit for family group name (parent only).
+    var familyGroupName by remember { mutableStateOf("My Family") }
 
     Column(
         modifier = Modifier
@@ -82,6 +96,74 @@ fun SettingsScreen(
                 fontSize = 24.sp,
                 color = TextBrown
             )
+        }
+
+        if (currentUser?.role == FamilyRole.PARENT) {
+            Text(
+                text = "Family Settings",
+                fontSize = 13.sp,
+                color = TextMutedBrown,
+                modifier = Modifier.padding(horizontal = 20.dp, vertical = 8.dp)
+            )
+            SettingsCard {
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clickable(onClick = onManageFamily)
+                        .padding(horizontal = 16.dp, vertical = 14.dp)
+                ) {
+                    Icon(
+                        Icons.Filled.Group,
+                        contentDescription = null,
+                        tint = ForestGreen,
+                        modifier = Modifier.size(22.dp)
+                    )
+                    Spacer(modifier = Modifier.width(14.dp))
+                    Column(modifier = Modifier.weight(1f)) {
+                        Text(
+                            text = "Manage Family Members",
+                            fontSize = 16.sp,
+                            color = TextBrown
+                        )
+                        Text(
+                            text = "Invite code, remove members",
+                            fontSize = 12.sp,
+                            color = TextMutedBrown
+                        )
+                    }
+                }
+                SettingsDivider()
+                Column(modifier = Modifier.padding(horizontal = 16.dp, vertical = 10.dp)) {
+                    Text(
+                        text = "Family Group Name",
+                        fontSize = 14.sp,
+                        color = TextBrown,
+                        fontWeight = FontWeight.Medium
+                    )
+                    Spacer(modifier = Modifier.height(8.dp))
+                    OutlinedTextField(
+                        value = familyGroupName,
+                        onValueChange = { familyGroupName = it },
+                        singleLine = true,
+                        shape = MaterialTheme.shapes.small,
+                        colors = OutlinedTextFieldDefaults.colors(
+                            focusedBorderColor = ForestGreen,
+                            unfocusedBorderColor = TextMutedBrown.copy(alpha = 0.45f),
+                            focusedContainerColor = Color.White,
+                            unfocusedContainerColor = GoldYellowLight.copy(alpha = 0.35f),
+                            cursorColor = ForestGreen
+                        ),
+                        modifier = Modifier.fillMaxWidth()
+                    )
+                    Text(
+                        text = "Placeholder — not persisted yet",
+                        fontSize = 11.sp,
+                        color = TextMutedBrown,
+                        modifier = Modifier.padding(top = 4.dp)
+                    )
+                }
+            }
         }
 
         Text(

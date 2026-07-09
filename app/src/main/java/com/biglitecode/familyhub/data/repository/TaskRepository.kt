@@ -26,6 +26,9 @@ interface TaskRepository {
     suspend fun updateTask(task: Task)
     suspend fun markComplete(taskId: String)
     suspend fun updateStatus(taskId: String, status: TaskStatus)
+    suspend fun deleteTask(taskId: String)
+    suspend fun removeMember(memberId: String)
+    suspend fun updateFamilyGroupName(name: String)
     suspend fun submitFeedback(feedback: Feedback)
     suspend fun submitComplaint(complaint: Complaint)
 }

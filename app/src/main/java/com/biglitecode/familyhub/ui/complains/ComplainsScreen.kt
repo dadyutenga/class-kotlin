@@ -42,6 +42,8 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.biglitecode.familyhub.data.model.Complaint
 import com.biglitecode.familyhub.data.model.ComplaintStatus
+import com.biglitecode.familyhub.data.model.FamilyRole
+import com.biglitecode.familyhub.data.session.SessionManager
 import com.biglitecode.familyhub.ui.theme.BorderGreen
 import com.biglitecode.familyhub.ui.theme.CardCream
 import com.biglitecode.familyhub.ui.theme.CoralRed
@@ -63,6 +65,13 @@ fun ComplainsScreen(
 ) {
     val complaints by viewModel.complaints.collectAsStateWithLifecycle()
     val form by viewModel.form.collectAsStateWithLifecycle()
+    val currentUser by SessionManager.currentUser.collectAsStateWithLifecycle()
+
+    val visibleComplaints = if (currentUser?.role == FamilyRole.PARENT) {
+        complaints
+    } else {
+        complaints.filter { it.submittedBy == currentUser?.id }
+    }
 
     val fieldColors = OutlinedTextFieldDefaults.colors(
         focusedBorderColor = ForestGreen,
@@ -166,7 +175,11 @@ fun ComplainsScreen(
 
         item {
             Text(
-                text = "Previous complaints",
+                text = if (currentUser?.role == FamilyRole.PARENT) {
+                    "All family complaints"
+                } else {
+                    "My complaints"
+                },
                 fontWeight = FontWeight.SemiBold,
                 fontSize = 16.sp,
                 color = TextBrown,
@@ -174,11 +187,22 @@ fun ComplainsScreen(
             )
         }
 
-        items(complaints, key = { it.id }) { complaint ->
+        items(visibleComplaints, key = { it.id }) { complaint ->
             ComplaintCard(
                 complaint = complaint,
                 modifier = Modifier.padding(horizontal = 20.dp, vertical = 6.dp)
             )
+        }
+
+        if (visibleComplaints.isEmpty()) {
+            item {
+                Text(
+                    text = "No complaints yet.",
+                    color = TextMutedBrown,
+                    fontSize = 14.sp,
+                    modifier = Modifier.padding(horizontal = 20.dp, vertical = 8.dp)
+                )
+            }
         }
     }
 }

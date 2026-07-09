@@ -8,6 +8,7 @@ import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.compose.runtime.*
+import com.biglitecode.familyhub.data.session.SessionManager
 import com.biglitecode.familyhub.ui.login.LoginScreen
 import com.biglitecode.familyhub.ui.theme.FamilyHubTheme
 
@@ -38,6 +39,9 @@ class LoginActivity : ComponentActivity() {
                             isLoading = true
                             // TODO: replace with real Supabase auth call
                             // For now, placeholder success after check
+                            // Role demo: parent emails default to Alex (PARENT);
+                            // emails with "child"/"jordan"/etc. resolve as CHILD.
+                            SessionManager.setFromLoginEmail(email)
                             startActivity(Intent(this, DashboardActivity::class.java))
                             finish()
                         }

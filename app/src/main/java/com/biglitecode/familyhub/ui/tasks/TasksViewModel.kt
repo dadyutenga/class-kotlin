@@ -72,6 +72,12 @@ class TasksViewModel(
         }
     }
 
+    fun deleteTask(taskId: String) {
+        viewModelScope.launch {
+            repository.deleteTask(taskId)
+        }
+    }
+
     fun addTask(
         title: String,
         description: String,
@@ -82,6 +88,7 @@ class TasksViewModel(
         viewModelScope.launch {
             val now = System.currentTimeMillis()
             val trimmedTitle = title.trim()
+            val assignerId = repository.currentUserId()
             repository.addTask(
                 Task(
                     id = "",
@@ -89,7 +96,7 @@ class TasksViewModel(
                     description = description.trim(),
                     assignedTo = assignee.id,
                     assignedToName = assignee.name,
-                    assignedBy = "m1",
+                    assignedBy = assignerId,
                     dueDate = dueDate,
                     status = TaskStatus.PENDING,
                     createdAt = now,

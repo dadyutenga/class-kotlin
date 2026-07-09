@@ -49,6 +49,7 @@ import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
 import com.biglitecode.familyhub.LoginActivity
+import com.biglitecode.familyhub.data.session.SessionManager
 import com.biglitecode.familyhub.ui.account.AccountScreen
 import com.biglitecode.familyhub.ui.complains.ComplainsScreen
 import com.biglitecode.familyhub.ui.contact.ContactScreen
@@ -107,6 +108,7 @@ fun FamilyHubNavGraph(
 
     fun logout() {
         closeDrawer()
+        SessionManager.clear()
         val intent = Intent(context, LoginActivity::class.java).apply {
             flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
         }
@@ -252,7 +254,12 @@ fun FamilyHubNavGraph(
                 composable(BottomNavItem.Settings.route) {
                     SettingsScreen(
                         onOpenDrawer = { openDrawer() },
-                        onLogout = { logout() }
+                        onLogout = { logout() },
+                        onManageFamily = {
+                            navController.navigate(AppRoutes.ACCOUNT) {
+                                launchSingleTop = true
+                            }
+                        }
                     )
                 }
                 composable(

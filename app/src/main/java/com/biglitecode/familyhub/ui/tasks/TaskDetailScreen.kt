@@ -25,6 +25,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Bluetooth
 import androidx.compose.material.icons.filled.Sms
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
@@ -34,9 +35,12 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
@@ -46,10 +50,13 @@ import androidx.compose.ui.unit.sp
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
+import com.biglitecode.familyhub.data.model.FamilyRole
 import com.biglitecode.familyhub.data.model.TaskStatus
+import com.biglitecode.familyhub.data.session.SessionManager
 import com.biglitecode.familyhub.ui.components.MemberAvatar
 import com.biglitecode.familyhub.ui.theme.BorderGreen
 import com.biglitecode.familyhub.ui.theme.CardCream
+import com.biglitecode.familyhub.ui.theme.CoralRed
 import com.biglitecode.familyhub.ui.theme.ForestGreen
 import com.biglitecode.familyhub.ui.theme.GoldYellow
 import com.biglitecode.familyhub.ui.theme.GoldYellowLight
@@ -69,11 +76,12 @@ fun TaskDetailScreen(
 ) {
     val tasks by viewModel.tasks.collectAsStateWithLifecycle()
     val members by viewModel.members.collectAsStateWithLifecycle()
+    val currentUser by SessionManager.currentUser.collectAsStateWithLifecycle()
     val task = tasks.find { it.id == taskId }
     val member = members.find { it.id == task?.assignedTo }
     val context = LocalContext.current
+    var showDeleteConfirm by remember { mutableStateOf(false) }
 
-    // Hold pending reminder targets so the permission callback can send SMS after grant.
     val pendingReminder = remember {
         object {
             var phone: String? = null
@@ -131,6 +139,12 @@ fun TaskDetailScreen(
     val dateFormat = SimpleDateFormat("MMM d, yyyy", Locale.getDefault())
     val isDone = task.status == TaskStatus.DONE
     val canRemind = task.status == TaskStatus.PENDING || task.status == TaskStatus.OVERDUE
+    val isParent = currentUser?.role == FamilyRole.PARENT
+    val isAssignee = task.assignedTo == currentUser?.id
+    // Parent: full actions. Child: only Mark Complete on own tasks. Else read-only.
+    val canActAsParent = isParent
+    val canMarkComplete = isParent || isAssignee
+    val readOnlyChild = !isParent && !isAssignee
 
     fun sendReminder() {
         val phone = member?.phoneNumber
@@ -164,8 +178,7 @@ fun TaskDetailScreen(
     }
 
     fun openBluetoothSettings() {
-        // Simplified Bluetooth demo: open system Bluetooth settings as an integration point
-        // instead of implementing full peer-to-peer task transfer / Nearby Share APIs.
+        // Simplified Bluetooth demo: open system Bluetooth settings as an integration point.
         val intent = Intent(Settings.ACTION_BLUETOOTH_SETTINGS)
         runCatching { context.startActivity(intent) }
             .onFailure {
@@ -197,13 +210,14 @@ fun TaskDetailScreen(
                 color = TextBrown,
                 modifier = Modifier.weight(1f)
             )
-            // Secondary: open Bluetooth settings to demonstrate device connectivity.
-            IconButton(onClick = { openBluetoothSettings() }) {
-                Icon(
-                    Icons.Filled.Bluetooth,
-                    contentDescription = "Share Task Nearby",
-                    tint = ForestGreen
-                )
+            if (canActAsParent) {
+                IconButton(onClick = { openBluetoothSettings() }) {
+                    Icon(
+                        Icons.Filled.Bluetooth,
+                        contentDescription = "Share Task Nearby",
+                        tint = ForestGreen
+                    )
+                }
             }
         }
 
@@ -216,7 +230,6 @@ fun TaskDetailScreen(
         )
         Spacer(modifier = Modifier.height(16.dp))
 
-        // Assigned to
         Card(
             shape = MaterialTheme.shapes.medium,
             colors = CardDefaults.cardColors(containerColor = CardCream),
@@ -286,66 +299,126 @@ fun TaskDetailScreen(
 
         Spacer(modifier = Modifier.height(28.dp))
 
-        Button(
-            onClick = { viewModel.markComplete(task.id) },
-            enabled = !isDone,
-            colors = ButtonDefaults.buttonColors(
-                containerColor = ForestGreen,
-                disabledContainerColor = ForestGreen.copy(alpha = 0.45f)
-            ),
-            shape = MaterialTheme.shapes.large,
-            modifier = Modifier
-                .fillMaxWidth()
-                .height(54.dp)
-        ) {
+        if (readOnlyChild) {
             Text(
-                text = if (isDone) "Completed" else "Mark Complete",
-                fontWeight = FontWeight.Bold,
-                fontSize = 16.sp
+                text = "Assigned to ${task.assignedToName} — view only",
+                fontSize = 14.sp,
+                color = TextMutedBrown,
+                modifier = Modifier.padding(bottom = 8.dp)
             )
-        }
+        } else {
+            if (canMarkComplete) {
+                Button(
+                    onClick = { viewModel.markComplete(task.id) },
+                    enabled = !isDone,
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = ForestGreen,
+                        disabledContainerColor = ForestGreen.copy(alpha = 0.45f)
+                    ),
+                    shape = MaterialTheme.shapes.large,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(54.dp)
+                ) {
+                    Text(
+                        text = if (isDone) "Completed" else "Mark Complete",
+                        fontWeight = FontWeight.Bold,
+                        fontSize = 16.sp
+                    )
+                }
+            }
 
-        Spacer(modifier = Modifier.height(12.dp))
+            if (canActAsParent) {
+                Spacer(modifier = Modifier.height(12.dp))
+                OutlinedButton(
+                    onClick = onEdit,
+                    colors = ButtonDefaults.outlinedButtonColors(contentColor = TextBrown),
+                    border = BorderStroke(1.5.dp, GoldYellow),
+                    shape = MaterialTheme.shapes.large,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(54.dp)
+                ) {
+                    Text(
+                        text = "Edit Task",
+                        fontWeight = FontWeight.SemiBold,
+                        fontSize = 16.sp
+                    )
+                }
 
-        OutlinedButton(
-            onClick = onEdit,
-            colors = ButtonDefaults.outlinedButtonColors(contentColor = TextBrown),
-            border = BorderStroke(1.5.dp, GoldYellow),
-            shape = MaterialTheme.shapes.large,
-            modifier = Modifier
-                .fillMaxWidth()
-                .height(54.dp)
-        ) {
-            Text(
-                text = "Edit Task",
-                fontWeight = FontWeight.SemiBold,
-                fontSize = 16.sp
-            )
-        }
+                if (canRemind) {
+                    Spacer(modifier = Modifier.height(12.dp))
+                    OutlinedButton(
+                        onClick = { sendReminder() },
+                        colors = ButtonDefaults.outlinedButtonColors(contentColor = ForestGreen),
+                        border = BorderStroke(1.5.dp, ForestGreen),
+                        shape = MaterialTheme.shapes.large,
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(54.dp)
+                    ) {
+                        Icon(Icons.Filled.Sms, contentDescription = null, tint = ForestGreen)
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text(
+                            text = "Send Reminder",
+                            fontWeight = FontWeight.SemiBold,
+                            fontSize = 16.sp,
+                            color = ForestGreen
+                        )
+                    }
+                }
 
-        if (canRemind) {
-            Spacer(modifier = Modifier.height(12.dp))
-            OutlinedButton(
-                onClick = { sendReminder() },
-                colors = ButtonDefaults.outlinedButtonColors(contentColor = ForestGreen),
-                border = BorderStroke(1.5.dp, ForestGreen),
-                shape = MaterialTheme.shapes.large,
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(54.dp)
-            ) {
-                Icon(Icons.Filled.Sms, contentDescription = null, tint = ForestGreen)
-                Spacer(modifier = Modifier.width(8.dp))
-                Text(
-                    text = "Send Reminder",
-                    fontWeight = FontWeight.SemiBold,
-                    fontSize = 16.sp,
-                    color = ForestGreen
-                )
+                Spacer(modifier = Modifier.height(12.dp))
+                OutlinedButton(
+                    onClick = { showDeleteConfirm = true },
+                    colors = ButtonDefaults.outlinedButtonColors(contentColor = CoralRed),
+                    border = BorderStroke(1.5.dp, CoralRed),
+                    shape = MaterialTheme.shapes.large,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(54.dp)
+                ) {
+                    Text(
+                        text = "Delete Task",
+                        fontWeight = FontWeight.SemiBold,
+                        fontSize = 16.sp,
+                        color = CoralRed
+                    )
+                }
             }
         }
 
         Spacer(modifier = Modifier.height(24.dp))
+    }
+
+    if (showDeleteConfirm) {
+        AlertDialog(
+            onDismissRequest = { showDeleteConfirm = false },
+            title = { Text("Delete task?", fontWeight = FontWeight.Bold, color = TextBrown) },
+            text = {
+                Text(
+                    text = "Remove \"${task.title}\" permanently? This cannot be undone.",
+                    color = TextMutedBrown
+                )
+            },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        viewModel.deleteTask(task.id)
+                        showDeleteConfirm = false
+                        onBack()
+                    }
+                ) {
+                    Text("Delete", color = CoralRed, fontWeight = FontWeight.Bold)
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { showDeleteConfirm = false }) {
+                    Text("Cancel", color = TextMutedBrown)
+                }
+            },
+            containerColor = CardCream
+        )
     }
 }
 

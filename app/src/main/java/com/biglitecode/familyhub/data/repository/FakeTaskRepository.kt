@@ -8,6 +8,7 @@ import com.biglitecode.familyhub.data.model.FamilyRole
 import com.biglitecode.familyhub.data.model.Feedback
 import com.biglitecode.familyhub.data.model.Task
 import com.biglitecode.familyhub.data.model.TaskStatus
+import com.biglitecode.familyhub.data.session.SessionManager
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -23,7 +24,7 @@ object FakeTaskRepository : TaskRepository {
     private val now = System.currentTimeMillis()
     private val dayMs = TimeUnit.DAYS.toMillis(1)
 
-    private const val CURRENT_USER_ID = "m1"
+    private const val FALLBACK_USER_ID = "m1"
 
     private val sampleMembers = listOf(
         FamilyMember(
@@ -222,7 +223,8 @@ object FakeTaskRepository : TaskRepository {
 
     override fun observeFamilyGroup(): Flow<FamilyGroup> = _familyGroup.asStateFlow()
 
-    override fun currentUserId(): String = CURRENT_USER_ID
+    override fun currentUserId(): String =
+        SessionManager.currentUser.value?.id ?: FALLBACK_USER_ID
 
     override suspend fun getTaskById(id: String): Task? =
         _tasks.value.find { it.id == id }
@@ -250,6 +252,22 @@ object FakeTaskRepository : TaskRepository {
         _tasks.update { list ->
             list.map { if (it.id == taskId) it.copy(status = status) else it }
         }
+    }
+
+    override suspend fun deleteTask(taskId: String) {
+        _tasks.update { list -> list.filterNot { it.id == taskId } }
+    }
+
+    override suspend fun removeMember(memberId: String) {
+        _members.update { list -> list.filterNot { it.id == memberId } }
+        // Drop tasks that belonged only to the removed member.
+        _tasks.update { list -> list.filterNot { it.assignedTo == memberId } }
+    }
+
+    override suspend fun updateFamilyGroupName(name: String) {
+        val trimmed = name.trim()
+        if (trimmed.isBlank()) return
+        _familyGroup.update { it.copy(name = trimmed) }
     }
 
     override suspend fun submitFeedback(feedback: Feedback) {

@@ -24,6 +24,8 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.ContentCopy
 import androidx.compose.material.icons.filled.Menu
+import androidx.compose.material.icons.filled.PersonRemove
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Icon
@@ -34,6 +36,7 @@ import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -49,10 +52,12 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
+import com.biglitecode.familyhub.data.model.FamilyMember
 import com.biglitecode.familyhub.data.model.FamilyRole
 import com.biglitecode.familyhub.ui.components.MemberAvatar
 import com.biglitecode.familyhub.ui.theme.BorderGreen
 import com.biglitecode.familyhub.ui.theme.CardCream
+import com.biglitecode.familyhub.ui.theme.CoralRed
 import com.biglitecode.familyhub.ui.theme.FamilyHubTheme
 import com.biglitecode.familyhub.ui.theme.ForestGreen
 import com.biglitecode.familyhub.ui.theme.GoldYellow
@@ -74,6 +79,9 @@ fun AccountScreen(
     var editing by remember { mutableStateOf(false) }
     var editName by remember(user?.name) { mutableStateOf(user?.name.orEmpty()) }
     var editEmail by remember(user?.email) { mutableStateOf(user?.email.orEmpty()) }
+    var memberToRemove by remember { mutableStateOf<FamilyMember?>(null) }
+
+    val isParent = user?.role == FamilyRole.PARENT
 
     LazyColumn(
         modifier = Modifier
@@ -138,7 +146,6 @@ fun AccountScreen(
                 modifier = Modifier.padding(top = 2.dp)
             )
             Spacer(modifier = Modifier.height(10.dp))
-            val isParent = user?.role == FamilyRole.PARENT
             Surface(
                 shape = MaterialTheme.shapes.small,
                 color = if (isParent) ForestGreen else GoldYellow
@@ -153,72 +160,86 @@ fun AccountScreen(
             }
         }
 
-        item {
-            Card(
-                shape = MaterialTheme.shapes.large,
-                colors = CardDefaults.cardColors(containerColor = CardCream),
-                border = BorderStroke(1.5.dp, BorderGreen),
-                elevation = CardDefaults.cardElevation(defaultElevation = 3.dp),
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 20.dp, vertical = 20.dp)
-            ) {
-                Column(modifier = Modifier.padding(18.dp)) {
-                    Text(
-                        text = "Family group",
-                        fontWeight = FontWeight.SemiBold,
-                        fontSize = 13.sp,
-                        color = TextMutedBrown
-                    )
-                    Spacer(modifier = Modifier.height(6.dp))
-                    Text(
-                        text = familyGroup?.name ?: "My Family",
-                        fontWeight = FontWeight.Bold,
-                        fontSize = 18.sp,
-                        color = TextBrown
-                    )
-                    Text(
-                        text = "${members.size} members",
-                        fontSize = 13.sp,
-                        color = TextMutedBrown,
-                        modifier = Modifier.padding(top = 2.dp)
-                    )
-                    Spacer(modifier = Modifier.height(14.dp))
-                    Text(
-                        text = "Family Code",
-                        fontSize = 12.sp,
-                        color = TextMutedBrown
-                    )
-                    Row(
-                        verticalAlignment = Alignment.CenterVertically,
-                        modifier = Modifier.fillMaxWidth()
-                    ) {
+        // Parent-only family management (invite code + remove members).
+        if (user?.role == FamilyRole.PARENT) {
+            item {
+                Card(
+                    shape = MaterialTheme.shapes.large,
+                    colors = CardDefaults.cardColors(containerColor = CardCream),
+                    border = BorderStroke(1.5.dp, BorderGreen),
+                    elevation = CardDefaults.cardElevation(defaultElevation = 3.dp),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 20.dp, vertical = 20.dp)
+                ) {
+                    Column(modifier = Modifier.padding(18.dp)) {
                         Text(
-                            text = familyGroup?.inviteCode ?: "—",
+                            text = "Manage Family",
                             fontWeight = FontWeight.Bold,
-                            fontSize = 20.sp,
-                            color = ForestGreen,
-                            modifier = Modifier.weight(1f)
+                            fontSize = 16.sp,
+                            color = TextBrown
                         )
-                        IconButton(
-                            onClick = {
-                                val code = familyGroup?.inviteCode.orEmpty()
-                                if (code.isNotBlank()) {
-                                    val cm = context.getSystemService(Context.CLIPBOARD_SERVICE)
-                                        as ClipboardManager
-                                    cm.setPrimaryClip(ClipData.newPlainText("Family Code", code))
-                                    Toast.makeText(context, "Code copied", Toast.LENGTH_SHORT).show()
-                                }
-                            }
+                        Spacer(modifier = Modifier.height(8.dp))
+                        Text(
+                            text = familyGroup?.name ?: "My Family",
+                            fontWeight = FontWeight.SemiBold,
+                            fontSize = 15.sp,
+                            color = TextBrown
+                        )
+                        Text(
+                            text = "${members.size} members",
+                            fontSize = 13.sp,
+                            color = TextMutedBrown,
+                            modifier = Modifier.padding(top = 2.dp)
+                        )
+                        Spacer(modifier = Modifier.height(14.dp))
+                        Text(
+                            text = "Family Code",
+                            fontSize = 12.sp,
+                            color = TextMutedBrown
+                        )
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            modifier = Modifier.fillMaxWidth()
                         ) {
-                            Icon(
-                                Icons.Filled.ContentCopy,
-                                contentDescription = "Copy family code",
-                                tint = ForestGreen
+                            Text(
+                                text = familyGroup?.inviteCode ?: "—",
+                                fontWeight = FontWeight.Bold,
+                                fontSize = 20.sp,
+                                color = ForestGreen,
+                                modifier = Modifier.weight(1f)
                             )
+                            IconButton(
+                                onClick = {
+                                    val code = familyGroup?.inviteCode.orEmpty()
+                                    if (code.isNotBlank()) {
+                                        val cm = context.getSystemService(Context.CLIPBOARD_SERVICE)
+                                            as ClipboardManager
+                                        cm.setPrimaryClip(ClipData.newPlainText("Family Code", code))
+                                        Toast.makeText(context, "Code copied", Toast.LENGTH_SHORT)
+                                            .show()
+                                    }
+                                }
+                            ) {
+                                Icon(
+                                    Icons.Filled.ContentCopy,
+                                    contentDescription = "Copy family code",
+                                    tint = ForestGreen
+                                )
+                            }
                         }
                     }
                 }
+            }
+        } else {
+            // Child: light family name only (no management actions).
+            item {
+                Text(
+                    text = familyGroup?.name ?: "My Family",
+                    fontSize = 14.sp,
+                    color = TextMutedBrown,
+                    modifier = Modifier.padding(top = 16.dp)
+                )
             }
         }
 
@@ -230,37 +251,91 @@ fun AccountScreen(
                 color = TextBrown,
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(horizontal = 20.dp)
+                    .padding(horizontal = 20.dp, vertical = 8.dp)
             )
-            LazyRow(
-                contentPadding = PaddingValues(horizontal = 20.dp, vertical = 12.dp),
-                horizontalArrangement = Arrangement.spacedBy(16.dp)
-            ) {
-                items(members, key = { it.id }) { member ->
-                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+        }
+
+        if (user?.role == FamilyRole.PARENT) {
+            // Vertical list with remove controls for parents.
+            items(members, key = { it.id }) { member ->
+                Card(
+                    shape = MaterialTheme.shapes.medium,
+                    colors = CardDefaults.cardColors(containerColor = CardCream),
+                    border = BorderStroke(1.dp, BorderGreen.copy(alpha = 0.4f)),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 20.dp, vertical = 4.dp)
+                ) {
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        modifier = Modifier.padding(horizontal = 12.dp, vertical = 10.dp)
+                    ) {
                         MemberAvatar(
                             name = member.name,
                             avatarColorHex = member.avatarColor,
-                            isActive = member.isActive
+                            isActive = member.isActive,
+                            size = 44.dp
                         )
-                        Spacer(modifier = Modifier.height(6.dp))
-                        Text(
-                            text = member.name,
-                            fontSize = 12.sp,
-                            fontWeight = FontWeight.Medium,
-                            color = if (member.isActive) TextBrown else TextMutedBrown
-                        )
-                        Text(
-                            text = if (member.role == FamilyRole.PARENT) "Parent" else "Child",
-                            fontSize = 11.sp,
-                            color = TextMutedBrown
-                        )
+                        Spacer(modifier = Modifier.width(12.dp))
+                        Column(modifier = Modifier.weight(1f)) {
+                            Text(
+                                text = member.name,
+                                fontWeight = FontWeight.SemiBold,
+                                color = TextBrown
+                            )
+                            Text(
+                                text = if (member.role == FamilyRole.PARENT) "Parent" else "Child",
+                                fontSize = 12.sp,
+                                color = TextMutedBrown
+                            )
+                        }
+                        // Don't allow removing yourself.
+                        if (member.id != user?.id) {
+                            IconButton(onClick = { memberToRemove = member }) {
+                                Icon(
+                                    Icons.Filled.PersonRemove,
+                                    contentDescription = "Remove ${member.name}",
+                                    tint = CoralRed
+                                )
+                            }
+                        }
+                    }
+                }
+            }
+        } else {
+            // Child: read-only horizontal chips.
+            item {
+                LazyRow(
+                    contentPadding = PaddingValues(horizontal = 20.dp, vertical = 12.dp),
+                    horizontalArrangement = Arrangement.spacedBy(16.dp)
+                ) {
+                    items(members, key = { it.id }) { member ->
+                        Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                            MemberAvatar(
+                                name = member.name,
+                                avatarColorHex = member.avatarColor,
+                                isActive = member.isActive
+                            )
+                            Spacer(modifier = Modifier.height(6.dp))
+                            Text(
+                                text = member.name,
+                                fontSize = 12.sp,
+                                fontWeight = FontWeight.Medium,
+                                color = if (member.isActive) TextBrown else TextMutedBrown
+                            )
+                            Text(
+                                text = if (member.role == FamilyRole.PARENT) "Parent" else "Child",
+                                fontSize = 11.sp,
+                                color = TextMutedBrown
+                            )
+                        }
                     }
                 }
             }
         }
 
         item {
+            Spacer(modifier = Modifier.height(12.dp))
             if (editing) {
                 val fieldColors = OutlinedTextFieldDefaults.colors(
                     focusedBorderColor = ForestGreen,
@@ -325,6 +400,38 @@ fun AccountScreen(
                 }
             }
         }
+    }
+
+    memberToRemove?.let { target ->
+        AlertDialog(
+            onDismissRequest = { memberToRemove = null },
+            title = {
+                Text("Remove ${target.name}?", fontWeight = FontWeight.Bold, color = TextBrown)
+            },
+            text = {
+                Text(
+                    text = "They will lose access to this family group and their assigned tasks.",
+                    color = TextMutedBrown
+                )
+            },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        viewModel.removeMember(target.id)
+                        memberToRemove = null
+                        Toast.makeText(context, "${target.name} removed", Toast.LENGTH_SHORT).show()
+                    }
+                ) {
+                    Text("Remove", color = CoralRed, fontWeight = FontWeight.Bold)
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { memberToRemove = null }) {
+                    Text("Cancel", color = TextMutedBrown)
+                }
+            },
+            containerColor = CardCream
+        )
     }
 }
 

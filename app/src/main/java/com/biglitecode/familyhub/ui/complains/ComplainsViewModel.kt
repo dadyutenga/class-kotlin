@@ -6,6 +6,7 @@ import com.biglitecode.familyhub.data.model.Complaint
 import com.biglitecode.familyhub.data.model.ComplaintStatus
 import com.biglitecode.familyhub.data.repository.FakeTaskRepository
 import com.biglitecode.familyhub.data.repository.TaskRepository
+import com.biglitecode.familyhub.data.session.SessionManager
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
@@ -36,12 +37,14 @@ class ComplainsViewModel(
         val current = _form.value
         if (current.subject.isBlank() || current.description.isBlank()) return
         viewModelScope.launch {
+            val userId = SessionManager.currentUser.value?.id
+                ?: repository.currentUserId()
             repository.submitComplaint(
                 Complaint(
                     id = "",
                     subject = current.subject.trim(),
                     description = current.description.trim(),
-                    submittedBy = repository.currentUserId(),
+                    submittedBy = userId,
                     submittedAt = System.currentTimeMillis(),
                     status = ComplaintStatus.OPEN
                 )

@@ -12,6 +12,7 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.ui.platform.LocalContext
 import androidx.core.content.ContextCompat
+import com.biglitecode.familyhub.data.session.SessionManager
 import com.biglitecode.familyhub.navigation.FamilyHubNavGraph
 import com.biglitecode.familyhub.ui.theme.FamilyHubTheme
 import com.biglitecode.familyhub.util.NotificationHelper
@@ -25,6 +26,10 @@ class DashboardActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         NotificationHelper.createNotificationChannel(this)
+        // Fallback if opened without login (e.g. process restore): demo as parent.
+        if (SessionManager.currentUser.value == null) {
+            SessionManager.setDemoParent()
+        }
         enableEdgeToEdge()
         setContent {
             FamilyHubTheme {
