@@ -38,6 +38,8 @@ class LoginActivity : ComponentActivity() {
                             isLoading = true
                             // TODO: replace with real Supabase auth call
                             // For now, placeholder success after check
+                            startActivity(Intent(this, DashboardActivity::class.java))
+                            finish()
                         }
                     },
                     onSignUpClick = {

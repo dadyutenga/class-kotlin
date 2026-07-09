@@ -1,10 +1,43 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- Inset so the family image sits safely inside adaptive-icon safe zone -->
-<layer-list xmlns:android="http://schemas.android.com/apk/res/android">
-    <item
-        android:drawable="@drawable/ic_family"
-        android:bottom="18dp"
-        android:left="18dp"
-        android:right="18dp"
-        android:top="18dp" />
-</layer-list>
+<!--
+  Simple geometric "family / home" glyph for adaptive launcher icon.
+  Cream strokes on transparent canvas; background layer supplies ForestGreen.
+  Viewport 108dp with ~safe zone inset (content roughly 30–78).
+-->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+
+    <!-- Soft cream house base -->
+    <path
+        android:fillColor="#FFFBF3E0"
+        android:pathData="M54,28 L76,48 L76,78 L32,78 L32,48 Z" />
+
+    <!-- Roof accent -->
+    <path
+        android:fillColor="#FFF5C242"
+        android:pathData="M54,24 L80,48 L76,48 L54,30 L32,48 L28,48 Z" />
+
+    <!-- Door -->
+    <path
+        android:fillColor="#FF2F6B44"
+        android:pathData="M48,58 h12 v20 h-12 z" />
+
+    <!-- Left person (head + body) -->
+    <path
+        android:fillColor="#FFFBF3E0"
+        android:pathData="M40,52 m-5,0 a5,5 0 1,1 10,0 a5,5 0 1,1 -10,0" />
+    <path
+        android:fillColor="#FFFBF3E0"
+        android:pathData="M33,58 h14 v10 h-14 z" />
+
+    <!-- Right person -->
+    <path
+        android:fillColor="#FFFBF3E0"
+        android:pathData="M68,52 m-5,0 a5,5 0 1,1 10,0 a5,5 0 1,1 -10,0" />
+    <path
+        android:fillColor="#FFFBF3E0"
+        android:pathData="M61,58 h14 v10 h-14 z" />
+</vector>

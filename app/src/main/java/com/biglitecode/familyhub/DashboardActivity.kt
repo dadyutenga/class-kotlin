@@ -1,89 +1,63 @@
 package com.biglitecode.familyhub
 
+import android.Manifest
+import android.content.pm.PackageManager
+import android.os.Build
 import android.os.Bundle
 import androidx.activity.ComponentActivity
+import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
-import androidx.compose.foundation.BorderStroke
-import androidx.compose.foundation.background
-import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.padding
-import androidx.compose.material3.Card
-import androidx.compose.material3.CardDefaults
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Text
-import androidx.compose.runtime.Composable
-import androidx.compose.ui.Alignment
-import androidx.compose.ui.Modifier
-import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.tooling.preview.Preview
-import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
-import com.biglitecode.familyhub.ui.theme.BorderGreen
-import com.biglitecode.familyhub.ui.theme.CardCream
+import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.ui.platform.LocalContext
+import androidx.core.content.ContextCompat
+import com.biglitecode.familyhub.navigation.FamilyHubNavGraph
 import com.biglitecode.familyhub.ui.theme.FamilyHubTheme
-import com.biglitecode.familyhub.ui.theme.TextBrown
-import com.biglitecode.familyhub.ui.theme.TextMutedBrown
+import com.biglitecode.familyhub.util.NotificationHelper
 
 /**
- * Post-auth home shell. Full dashboard UI will be implemented later.
+ * Post-auth main shell. Hosts bottom navigation (Home, Tasks, Progress, Settings)
+ * via [FamilyHubNavGraph]. Launched after successful login/signup.
  */
 class DashboardActivity : ComponentActivity() {
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        NotificationHelper.createNotificationChannel(this)
         enableEdgeToEdge()
         setContent {
             FamilyHubTheme {
-                DashboardPlaceholder()
+                val context = LocalContext.current
+                val permissionLauncher = rememberLauncherForActivityResult(
+                    ActivityResultContracts.RequestPermission()
+                ) {
+                    // Granted or denied — either way we only ask once via SharedPreferences.
+                }
+
+                LaunchedEffect(Unit) {
+                    if (Build.VERSION.SDK_INT < Build.VERSION_CODES.TIRAMISU) return@LaunchedEffect
+                    val prefs = context.getSharedPreferences(PREFS_NAME, MODE_PRIVATE)
+                    val alreadyAsked = prefs.getBoolean(KEY_NOTIF_PERMISSION_ASKED, false)
+                    if (alreadyAsked) return@LaunchedEffect
+
+                    prefs.edit().putBoolean(KEY_NOTIF_PERMISSION_ASKED, true).apply()
+                    val granted = ContextCompat.checkSelfPermission(
+                        context,
+                        Manifest.permission.POST_NOTIFICATIONS
+                    ) == PackageManager.PERMISSION_GRANTED
+                    if (!granted) {
+                        permissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
+                    }
+                }
+
+                FamilyHubNavGraph()
             }
         }
     }
-}
 
-@Composable
-private fun DashboardPlaceholder() {
-    Box(
-        contentAlignment = Alignment.Center,
-        modifier = Modifier
-            .fillMaxSize()
-            .background(MaterialTheme.colorScheme.background)
-            .padding(24.dp)
-    ) {
-        Card(
-            shape = MaterialTheme.shapes.large,
-            colors = CardDefaults.cardColors(containerColor = CardCream),
-            border = BorderStroke(1.5.dp, BorderGreen),
-            elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
-        ) {
-            Column(
-                horizontalAlignment = Alignment.CenterHorizontally,
-                modifier = Modifier.padding(horizontal = 28.dp, vertical = 32.dp)
-            ) {
-                Text(
-                    text = "Dashboard",
-                    fontWeight = FontWeight.Bold,
-                    fontSize = 22.sp,
-                    color = TextBrown
-                )
-                Spacer(modifier = Modifier.height(8.dp))
-                Text(
-                    text = "Your family chore hub will live here.",
-                    color = TextMutedBrown,
-                    fontSize = 14.sp
-                )
-            }
-        }
-    }
-}
-
-@Preview(showBackground = true, showSystemUi = true, name = "Dashboard placeholder")
-@Composable
-private fun DashboardPlaceholderPreview() {
-    FamilyHubTheme {
-        DashboardPlaceholder()
+    companion object {
+        private const val PREFS_NAME = "familyhub_prefs"
+        private const val KEY_NOTIF_PERMISSION_ASKED = "notif_permission_asked"
     }
 }
