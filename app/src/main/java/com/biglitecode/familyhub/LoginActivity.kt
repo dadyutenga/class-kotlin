@@ -36,8 +36,10 @@ class LoginActivity : ComponentActivity() {
                         } else {
                             errorMessage = null
                             isLoading = true
-                            // TODO: replace with real Supabase auth call
-                            // For now, placeholder success after check
+                            // TODO: replace with real Supabase auth call.
+                            // For now, placeholder success that routes to Home.
+                            startActivity(Intent(this, HomeActivity::class.java))
+                            finish()
                         }
                     },
                     onSignUpClick = {
